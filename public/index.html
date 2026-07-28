@@ -302,8 +302,16 @@ function hostLoadUrl() {
   if (!isHost) return;
   const url = document.getElementById('inp-url').value.trim();
   if (!url) return showToast('Pega un enlace de video');
+
+  // Cargar inmediatamente en el anfitrión
+  player.src = url;
+  player.load();
+  player.play().catch(() => {});
+
+  // Avisar al invitado
   socket.emit('video-action', { type: 'source', src: url });
   document.getElementById('inp-url').value = '';
+  showToast('Video cargado');
 }
 
 function hostTogglePlay() {
@@ -322,11 +330,14 @@ function hostSkip(sec) {
 }
 
 socket.on('video-state', (state) => {
-  if (state.src && player.src !== state.src) {
-    player.src = state.src;
-    player.load();
+  if (state.src) {
+    // Solo cambiar si es diferente
+    if (!player.src || !player.src.includes(state.src.split('/').pop())) {
+      player.src = state.src;
+      player.load();
+    }
   }
-  if (typeof state.time === 'number' && Math.abs(player.currentTime - state.time) > 1.2) {
+  if (typeof state.time === 'number' && Math.abs(player.currentTime - state.time) > 1.5) {
     player.currentTime = state.time;
   }
   if (state.paused) {
